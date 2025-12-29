@@ -1,0 +1,30 @@
+# Copilot:
+# Create a docker-compose file with:
+# - Service "api": builds current folder, exposes 127.0.0.1:3000:3000
+# - Service "db": postgres:15 with volume
+# - Use environment variables for DB connection
+# - Restart unless-stopped
+
+version: '3.8'
+services:
+  api:
+    build: .
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      - PORT=3000
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/postgres
+      - JWT_SECRET=changeme
+    depends_on:
+      - db
+    restart: unless-stopped
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+volumes:
+  db_data:
