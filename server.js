@@ -28,6 +28,16 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const app = express();
 app.use(express.json());
 app.use(helmet());
+
+// --- OPS HEALTH CHECK (INJECTED) ---
+app.get("/api/healthz", (req, res) => {
+  res.status(200).json({ status: "ok", uptime: process.uptime(), timestamp: new Date().toISOString() });
+});
+app.get("/healthz", (req, res) => {
+  res.status(200).json({ status: "ok", uptime: process.uptime(), timestamp: new Date().toISOString() });
+});
+// ----------------------------------
+
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
 
 // Postgres connection pool

@@ -1,14 +1,9 @@
-# Copilot:
-# Create a Dockerfile using node:20-alpine.
-# Copy package.json, install production deps.
-# Copy server.js.
-# Expose port 3000.
-# Command: npm start.
-
 FROM node:20-alpine
 WORKDIR /app
-COPY package.json ./
-RUN npm install --omit=dev
-COPY server.js ./
+COPY package*.json ./
+# STRICT: Chỉ dùng npm ci
+RUN npm ci --only=production
+COPY . .
+# Chỉ document port 3000 (Binding thực tế do Compose lo)
 EXPOSE 3000
 CMD ["npm", "start"]
