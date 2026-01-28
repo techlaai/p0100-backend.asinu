@@ -1,4 +1,6 @@
-﻿const DEFAULT_MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+﻿const { getDiaBrainReply } = require('./ai/providers/diabrain');
+
+const DEFAULT_MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
 
 const buildMockReply = (message) => {
   const trimmed = String(message || '').slice(0, 240).trim();
@@ -43,6 +45,13 @@ async function callGemini(message, context) {
 }
 
 async function getChatReply(message, context) {
+  const provider = String(process.env.AI_PROVIDER || '').toLowerCase();
+  if (provider === 'diabrain') {
+    const userId = context?.user_id ?? context?.userId ?? null;
+    const sessionId = context?.session_id ?? context?.sessionId ?? null;
+    return getDiaBrainReply({ message, userId, sessionId });
+  }
+
   if (!process.env.GEMINI_API_KEY) {
     return { reply: buildMockReply(message), provider: 'mock' };
   }

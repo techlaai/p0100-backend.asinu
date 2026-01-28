@@ -1,4 +1,12 @@
-node_modules/
-*.bak.phase8
 .env
-audit_pack_v1_2/evidence_vps/
+.env.*
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.DS_Store
+*.log
+tmp/
+cache/
+audit_pack_v1_*/**/*token*
