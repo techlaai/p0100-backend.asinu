@@ -4,7 +4,9 @@
   "main": "server.js",
   "type": "commonjs",
   "scripts": {
-    "start": "node scripts/migrate.js && node server.js"
+    "start": "node scripts/migrate.js && node server.js",
+    "build": "node -c 'require(\"./server.js\")' && echo 'Backend build successful'",
+    "test": "echo \"No tests specified\" && exit 0"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

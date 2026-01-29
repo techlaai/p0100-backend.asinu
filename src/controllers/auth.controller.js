@@ -15,6 +15,9 @@ function verifySocialToken(_provider, token) {
   if (!token || typeof token !== 'string') {
     return false;
   }
+  // TODO: Add proper token verification for each provider
+  // For now, accept any non-empty string token for development
+  console.log(`[auth] Mock verification for ${_provider} with token: ${token.substring(0, 10)}...`);
   return true;
 }
 
@@ -101,9 +104,18 @@ async function loginByProvider(pool, req, res, provider, idColumn) {
   if (!token) {
     return res.status(400).json({ ok: false, error: 'Missing token' });
   }
-  if (!provider_id) {
-    return res.status(400).json({ ok: false, error: 'Missing provider_id' });
+  
+  // Generate provider_id if not provided (for development)
+  let actualProviderId = provider_id;
+  if (!actualProviderId && email) {
+    actualProviderId = `${provider}_${email}`;
+    console.log(`[auth] Generated provider_id: ${actualProviderId}`);
   }
+  
+  if (!actualProviderId) {
+    return res.status(400).json({ ok: false, error: 'Missing provider_id or email' });
+  }
+  
   if (!verifySocialToken(provider, token)) {
     return res.status(401).json({ ok: false, error: 'Invalid token' });
   }
@@ -111,10 +123,11 @@ async function loginByProvider(pool, req, res, provider, idColumn) {
   try {
     const existing = await pool.query(
       `SELECT id, email FROM users WHERE ${idColumn} = $1`,
-      [provider_id]
+      [actualProviderId]
     );
     if (existing.rows.length > 0) {
       const response = issueJwt(existing.rows[0]);
+      console.log(`[auth] Existing ${provider} user logged in:`, response.user.email);
       return res.status(200).json(response);
     }
 
@@ -122,9 +135,10 @@ async function loginByProvider(pool, req, res, provider, idColumn) {
       `INSERT INTO users (${idColumn}, email, phone_number, auth_provider)
        VALUES ($1, $2, $3, $4)
        RETURNING id, email`,
-      [provider_id, email || null, phone_number || null, provider.toUpperCase()]
+      [actualProviderId, email || null, phone_number || null, provider.toUpperCase()]
     );
     const response = issueJwt(insert.rows[0]);
+    console.log(`[auth] New ${provider} user created:`, response.user.email);
     return res.status(200).json(response);
   } catch (err) {
     console.error(`Social login failed (${provider}):`, err);
