@@ -228,11 +228,68 @@ async function deleteConnection(pool, req, res) {
   }
 }
 
+async function updateConnection(pool, req, res) {
+  const connectionId = req.params.id;
+  const { relationship_type, role } = req.body;
+
+  if (!relationship_type && !role) {
+    return res.status(400).json({ ok: false, error: 'Cần ít nhất một trường để cập nhật' });
+  }
+
+  try {
+    // First verify the user is part of this connection
+    const checkResult = await pool.query(
+      `SELECT * FROM user_connections 
+       WHERE id = $1 AND (requester_id = $2 OR addressee_id = $2) AND status = 'accepted'`,
+      [connectionId, req.user.id]
+    );
+
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ ok: false, error: 'Không tìm thấy kết nối' });
+    }
+
+    // Build dynamic update query
+    const updates = [];
+    const values = [];
+    let paramIndex = 1;
+
+    if (relationship_type !== undefined) {
+      updates.push(`relationship_type = $${paramIndex}`);
+      values.push(relationship_type);
+      paramIndex++;
+    }
+
+    if (role !== undefined) {
+      updates.push(`role = $${paramIndex}`);
+      values.push(role);
+      paramIndex++;
+    }
+
+    updates.push(`updated_at = NOW()`);
+    values.push(connectionId, req.user.id);
+
+    const updateQuery = `
+      UPDATE user_connections
+      SET ${updates.join(', ')}
+      WHERE id = $${paramIndex} AND (requester_id = $${paramIndex + 1} OR addressee_id = $${paramIndex + 1})
+      RETURNING *
+    `;
+
+    const result = await pool.query(updateQuery, values);
+
+    return res.status(200).json({ ok: true, connection: result.rows[0] });
+  } catch (err) {
+    console.error('update connection failed:', err);
+    return res.status(500).json({ ok: false, error: 'Lỗi server' });
+  }
+}
+
 module.exports = {
   createInvitation,
   getInvitations,
   acceptInvitation,
   rejectInvitation,
   getConnections,
-  deleteConnection
+  deleteConnection,
+  updateConnection
 };
